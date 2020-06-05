@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title> 404 Page Error|-ab-|Anshuman Bharatiya Portfolio</title>
+        <!-- mata part -->
+        <meta charset="UTF-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="description" content="I am Anshuman Bharatiya and i want to be a full stack web developer. I love to do animated page or website. Works with HTML, CSS, JavaScript, PHP, Mysql, and many plugins...." />
+        <meta name="keywords" content="-ab-, anshuman bharatiya, anshumanbharatiya, AnshumanBharatiya, Anshuman Bharatiya, bharatiyaa6, bharatiyaa10, Anshuman Bharatiya github, anshuman bharatiya website, anshuman baharatiya portfolio, abhartaiyaa, anshumanbharatiyaa.tk" />
+        <meta name="author" content="Anshuman Bharatiya" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0' />
+        
+        <link rel="shortcut icon" href="https://anshumanbharatiyaa.tk/images/mylogo2.png" type="image/png">
+        <style type="text/css">
+        @import url('https://fonts.googleapis.com/css2?family=Acme&display=swap');
+        *{
+        padding: 0;
+        margin: 0;
+        font-family: 'Acme', sans-serif;
+        box-sizing: border-box;
+        }
+        body{
+        /* background: linear-gradient(235deg,#8500f3,#5acafd); */
+        height: 100vh;
+        }
+        #con{
+        position: absolute;
+       /*  top: 10%;
+        left: 10%;
+        right: 10%;
+        bottom: 10%; */
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background: url("images/404.png"),#151729;
+        box-shadow: 0 15px 30px rgba(0,0,0,0.5);
+        }
+        #con .content{
+        max-width: 700px;
+        text-align: center;
+        padding: 30px 40px;
+        }
+        #con .content h2{
+        font-size: 110px;
+        line-height: 1.2em;
+        padding: 0;
+        margin: 0;
+        background: linear-gradient(to top, #ff0562, #2196f3);
+        -webkit-text-fill-color: transparent;
+        -webkit-background-clip:text;
+        text-shadow: 0 0 10px rgba(0,0,0,0.4);
+        }
+        #con .content h4{
+        position: relative;
+        font-size: 22px;
+        color: #dedede;
+        font-weight: 300;
+        margin-bottom: 10px;
+        }
+        #con .content p{
+        color: #dedede;
+        font-size: 16px;
+        letter-spacing: 1px;
+        }
+        /* #con .content a{
+            text-decoration: none;
+            position: relative;
+            display: inline-block;
+            padding: 10px 25px;
+            margin-top: 25px;
+            background: #ff0562;
+            color: #dedede;
+            border-radius: 20px;
+            border-bottom: 4px solid #d00d50;
+        } */
+        </style>
+    </head>
+    <body>
+        <div id="con">
+            <div class="content">
+                <h2>404</h2>
+                <h4>Oops ! Page not found</h4>
+                <p>The page you were looking for doesn't exist or temporarily unavailable.</p><p> You have mistype the address or the page may have moved.</p>
+                <!-- <a href="">Back To Home</a> -->
+            </div>
+        </div>
+        <script type="text/javascript">
+            var con = document.getElementById('con');
+            window.onmousemove = function (e) {
+                var x = - e.clientX/5,
+                    y = - e.clientY/5;
+                    con.style.backgroundPositionX = x + 'px';
+                    con.style.backgroundPositionY = y + 'px';
+            }
+        </script>
+    </body>
+</html>
+
+<!-- .htaccess
+ErrorDocument 404 https://AnshumanBharatiya.github.io?error=404
+
+ -->
