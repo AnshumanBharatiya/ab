@@ -199,20 +199,27 @@ body.light .theme-toggle:hover{border-color:#0f0f0f}
   display:none;position:fixed;inset:0;
   background:rgba(8,8,8,.98);
   flex-direction:column;align-items:flex-start;justify-content:center;
-  padding:24px 36px;z-index:250;gap:0;overflow-y:auto;
+  padding:70px 36px 36px;z-index:250;gap:0;overflow-y:auto;
 }
 .mob-overlay.open{display:flex}
+.mob-close{
+  position:absolute;top:16px;right:16px;
+  background:none;border:1px solid var(--bdr);
+  width:38px;height:38px;display:grid;place-items:center;
+  color:var(--mt);font-size:.85rem;cursor:pointer;transition:.2s;
+}
+.mob-close:hover{border-color:var(--a1);color:var(--a1)}
 .mob-overlay a{
-  display:flex;align-items:center;gap:16px;
-  font-size:clamp(1.4rem,6vw,2rem);font-weight:700;
+  display:flex;align-items:center;gap:14px;
+  font-size:clamp(1.1rem,4.5vw,1.5rem);font-weight:700;
   color:rgba(240,240,240,.2);text-decoration:none;
-  padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);
+  padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);
   width:100%;transition:color .2s,gap .2s;letter-spacing:-.02em;
 }
 .mob-overlay a:last-child{border:none}
-.mob-overlay a:hover{color:var(--a1);gap:24px}
-.mob-num{font-family:'DM Mono',monospace;font-size:.65rem;color:var(--a1);flex-shrink:0;margin-top:4px}
-.mob-social{display:flex;gap:20px;margin-top:32px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06)}
+.mob-overlay a:hover{color:var(--a1);gap:22px}
+.mob-num{font-family:'DM Mono',monospace;font-size:.6rem;color:var(--a1);flex-shrink:0;margin-top:3px}
+.mob-social{display:flex;gap:20px;margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,.06)}
 .mob-social a{color:rgba(240,240,240,.4);font-size:1rem;text-decoration:none;transition:.2s}
 .mob-social a:hover{color:var(--a1)}
 
@@ -265,16 +272,7 @@ body.light .hero-tag{color:#1a6600;border:1px solid rgba(0,0,0,.15);padding:5px 
 body.light .hero-tag::before{background:#1a6600}
 body.light .hero-sub{color:#444}
 body.light .hero-sub .typed-w{color:var(--tx)}
-/* mobile theme btn always visible */
-.theme-toggle-mob{
-  display:none;position:fixed;bottom:80px;right:22px;z-index:600;
-  width:42px;height:42px;border:1px solid var(--bdr);
-  background:var(--bg2);font-size:1rem;cursor:pointer;
-  transition:border-color .2s,transform .2s;
-}
-.theme-toggle-mob:hover{border-color:var(--a1);transform:scale(1.08)}
 @media(max-width:1024px){
-  .theme-toggle-mob{display:grid;place-items:center}
   .topbar-right .theme-toggle{display:grid;place-items:center}
 }
 .hero-name{
@@ -755,6 +753,7 @@ footer{
   </div>
 </div>
 <div class="mob-overlay" id="mobNav">
+  <button class="mob-close" onclick="cmob()"><i class="fas fa-times"></i></button>
   <a href="#home"       onclick="cmob()"><span class="mob-num">01</span>Home</a>
   <a href="#about"      onclick="cmob()"><span class="mob-num">02</span>About</a>
   <a href="#skills"     onclick="cmob()"><span class="mob-num">03</span>Skills</a>
@@ -901,7 +900,6 @@ footer{
 </div><!-- .page -->
 
 <button id="btt"><i class="fas fa-arrow-up"></i></button>
-<button class="theme-toggle-mob" id="themeToggleMob" aria-label="Toggle theme">🌙</button>
 
 <script>
 /* ═══════════════════════════════════════
@@ -1252,7 +1250,7 @@ function cmob(){hbg.classList.remove('open');mob.classList.remove('open');docume
 function applyTheme(light){
   document.body.classList.toggle('light',light);
   const icon=light?'☀️':'🌙';
-  ['themeToggle','themeToggleTop','themeToggleMob'].forEach(id=>{
+  ['themeToggle','themeToggleTop'].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.textContent=icon;
   });
@@ -1262,7 +1260,6 @@ const savedTheme=localStorage.getItem('theme');
 if(savedTheme==='light')applyTheme(true);
 document.getElementById('themeToggle')?.addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 document.getElementById('themeToggleTop')?.addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
-document.getElementById('themeToggleMob')?.addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 
 /* ── Intersection Observer ── */
 function observeAll(){
