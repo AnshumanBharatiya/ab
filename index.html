@@ -1261,7 +1261,227 @@ if(savedTheme==='light')applyTheme(true);
 document.getElementById('themeToggle')?.addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 document.getElementById('themeToggleTop')?.addEventListener('click',()=>applyTheme(!document.body.classList.contains('light')));
 
-/* ── Intersection Observer ── */
+/* ══════════════════════════════════════════
+   FULL-PAGE BACKGROUND CANVAS EFFECT
+══════════════════════════════════════════ */
+(function BG(){
+  const cv = document.createElement('canvas');
+  cv.id = 'bg-canvas';
+  cv.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:0;opacity:1;';
+  document.body.insertBefore(cv, document.body.firstChild);
+  const ctx = cv.getContext('2d');
+
+  let W, H, mouse = {x:-999,y:-999};
+  const N = 90; // particle count
+  const pts = [];
+
+  function resize(){
+    W = cv.width  = innerWidth;
+    H = cv.height = innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  document.addEventListener('mousemove', e=>{ mouse.x=e.clientX; mouse.y=e.clientY; });
+
+  /* ── Particle ── */
+  function Pt(){
+    this.reset(true);
+  }
+  Pt.prototype.reset = function(init){
+    this.x  = Math.random()*W;
+    this.y  = init ? Math.random()*H : (Math.random()<.5 ? 0 : H);
+    this.vx = (Math.random()-.5)*.45;
+    this.vy = (Math.random()-.5)*.45;
+    this.r  = Math.random()*1.8+.4;
+    this.pulse = Math.random()*Math.PI*2;
+  };
+  Pt.prototype.update = function(){
+    this.pulse += .018;
+
+    /* gentle mouse repel */
+    const dx = this.x - mouse.x;
+    const dy = this.y - mouse.y;
+    const dist = Math.sqrt(dx*dx+dy*dy);
+    if(dist < 160){
+      const f = (160-dist)/160 * .6;
+      this.vx += (dx/dist)*f;
+      this.vy += (dy/dist)*f;
+    }
+
+    /* drag */
+    this.vx *= .98;
+    this.vy *= .98;
+    this.x  += this.vx;
+    this.y  += this.vy;
+
+    if(this.x<-20||this.x>W+20||this.y<-20||this.y>H+20) this.reset(false);
+  };
+
+  for(let i=0;i<N;i++) pts.push(new Pt());
+
+  /* ── Floating geometric shapes ── */
+  const SHAPES = [];
+  for(let i=0;i<18;i++){
+    SHAPES.push({
+      x:Math.random()*3000, y:Math.random()*8000,
+      r: Math.random()*16+6,
+      rot:Math.random()*Math.PI*2,
+      rotV:(Math.random()-.5)*.006,
+      vx:(Math.random()-.5)*.12,
+      vy:(Math.random()-.5)*.12,
+      sides: [3,4,6][Math.floor(Math.random()*3)],
+      alpha: Math.random()*.12+.03,
+    });
+  }
+
+  function drawPoly(x,y,r,sides,rot,color,alpha){
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for(let i=0;i<sides;i++){
+      const a = rot + (i/sides)*Math.PI*2;
+      i===0
+        ? ctx.moveTo(x+Math.cos(a)*r, y+Math.sin(a)*r)
+        : ctx.lineTo(x+Math.cos(a)*r, y+Math.sin(a)*r);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /* ── Color helper (respects theme) ── */
+  function c1(a){ return document.body.classList.contains('light')
+    ? `rgba(20,80,0,${a})`
+    : `rgba(200,255,0,${a})`; }
+  function c2(a){ return document.body.classList.contains('light')
+    ? `rgba(0,80,120,${a})`
+    : `rgba(0,212,255,${a})`; }
+
+  /* ── Scroll offset to make shapes cover whole scrollable doc ── */
+  function loop(){
+    ctx.clearRect(0,0,W,H);
+
+    /* ── 1. Shapes (fixed to viewport, slow drift) ── */
+    SHAPES.forEach(s=>{
+      s.x  += s.vx; s.y  += s.vy; s.rot += s.rotV;
+      if(s.x < -40) s.x = W+40;
+      if(s.x > W+40) s.x = -40;
+      if(s.y < -40) s.y = H+40;
+      if(s.y > H+40) s.y = -40;
+      drawPoly(s.x,s.y,s.r,s.sides,s.rot,
+        s.sides===3 ? c1(s.alpha) : s.sides===4 ? c2(s.alpha) : c1(s.alpha*.7),
+        s.alpha);
+    });
+
+    /* ── 2. Neural network particles ── */
+    pts.forEach(p=>p.update());
+
+    /* draw connecting lines */
+    for(let i=0;i<pts.length;i++){
+      for(let j=i+1;j<pts.length;j++){
+        const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y;
+        const d=Math.sqrt(dx*dx+dy*dy);
+        if(d<140){
+          ctx.beginPath();
+          ctx.moveTo(pts[i].x,pts[i].y);
+          ctx.lineTo(pts[j].x,pts[j].y);
+          ctx.strokeStyle=c1((1-d/140)*.12);
+          ctx.lineWidth=.8;
+          ctx.stroke();
+        }
+      }
+    }
+
+    /* draw dots */
+    pts.forEach(p=>{
+      const pulse = Math.sin(p.pulse)*.4+.6;
+      ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r*pulse,0,Math.PI*2);
+      ctx.fillStyle=c1(.45*pulse);
+      ctx.fill();
+    });
+
+    /* ── 3. Subtle scanlines ── */
+    if(!document.body.classList.contains('light')){
+      ctx.fillStyle='rgba(200,255,0,.012)';
+      for(let y=0;y<H;y+=4){
+        ctx.fillRect(0,y,W,1);
+      }
+    }
+
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ══════════════════════════════════════════
+   CLICK BURST EFFECT
+══════════════════════════════════════════ */
+(function Effects(){
+  const cv = document.createElement('canvas');
+  cv.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:3;';
+  document.body.appendChild(cv);
+  const ctx = cv.getContext('2d');
+
+  function resize(){ cv.width=innerWidth; cv.height=innerHeight; }
+  resize();
+  window.addEventListener('resize', resize);
+
+  const particles = [];
+  let frame=0;
+  const COLORS=['#c8ff00','#00d4ff','#ff4d5a','#ffffff','#ffb700'];
+  function rnd(a,b){return a+Math.random()*(b-a);}
+  function pick(){return COLORS[Math.floor(Math.random()*COLORS.length)];}
+
+  document.addEventListener('click',e=>{
+    const x=e.clientX,y=e.clientY;
+    for(let r=0;r<4;r++)
+      particles.push({type:'ring',x,y,radius:0,maxR:rnd(60,160)*(1+r*.4),alpha:.7/(r+1),decay:.018/(r*.4+1),color:pick(),lw:r===0?2:1});
+    for(let i=0;i<14;i++){
+      const a=(i/14)*Math.PI*2+rnd(-.2,.2),sp=rnd(3,8);
+      particles.push({type:'line',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,len:rnd(8,22),alpha:.9,decay:rnd(.02,.04),color:pick()});
+    }
+    for(let i=0;i<16;i++){
+      const a=rnd(0,Math.PI*2),sp=rnd(1.5,6);
+      particles.push({type:'dot',x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,size:rnd(1.5,4),alpha:1,decay:rnd(.015,.035),color:pick(),gravity:rnd(.05,.12)});
+    }
+    particles.push({type:'shock',x,y,radius:0,maxR:rnd(80,180),alpha:.5,decay:.025});
+  });
+
+  function loop(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    frame++;
+    for(let i=particles.length-1;i>=0;i--){
+      const p=particles[i];
+      p.alpha-=p.decay;
+      if(p.alpha<=0){particles.splice(i,1);continue;}
+      ctx.globalAlpha=Math.max(0,p.alpha);
+      if(p.type==='ring'){
+        p.radius+=(p.maxR-p.radius)*.08;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);
+        ctx.strokeStyle=p.color;ctx.lineWidth=p.lw;ctx.stroke();
+      } else if(p.type==='shock'){
+        p.radius+=(p.maxR-p.radius)*.1;
+        const g=ctx.createRadialGradient(p.x,p.y,p.radius*.7,p.x,p.y,p.radius);
+        g.addColorStop(0,'transparent');g.addColorStop(.6,`rgba(200,255,0,${p.alpha*.3})`);g.addColorStop(1,'transparent');
+        ctx.beginPath();ctx.arc(p.x,p.y,p.radius,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();
+      } else if(p.type==='line'){
+        p.x+=p.vx;p.y+=p.vy;p.vx*=.92;p.vy*=.92;
+        ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x-p.vx*p.len*.5,p.y-p.vy*p.len*.5);
+        ctx.strokeStyle=p.color;ctx.lineWidth=1.5;ctx.stroke();
+      } else if(p.type==='dot'){
+        p.x+=p.vx;p.y+=p.vy;p.vy+=p.gravity;p.vx*=.96;p.vy*=.96;
+        ctx.beginPath();ctx.arc(p.x,p.y,p.size*(p.alpha+.1),0,Math.PI*2);
+        ctx.fillStyle=p.color;ctx.fill();
+      }
+    }
+    ctx.globalAlpha=1;
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
 function observeAll(){
   const io=new IntersectionObserver(entries=>{
     entries.forEach(e=>{if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});
@@ -1274,6 +1494,160 @@ function observeAll(){
   document.querySelectorAll('.sk-bar').forEach(b=>bo.observe(b));
 }
 observeAll();
+
+/* ══════════════════════════════════════════
+   FULLPAGE SCROLL ENGINE
+══════════════════════════════════════════ */
+(function FP(){
+  const page  = document.querySelector('.page');
+  const secs  = [...document.querySelectorAll('.page section[id]')];
+  const IDS   = secs.map(s=>s.id);
+  let cur=0, anim=false, touchY=0;
+
+  /* ── Style container ── */
+  page.style.cssText += ';height:100vh;overflow:hidden;position:relative;';
+
+  /* ── Style each section ── */
+  secs.forEach((s,i)=>{
+    s.style.position   = 'absolute';
+    s.style.top        = '0';
+    s.style.left       = '0';
+    s.style.width      = '100%';
+    s.style.height     = '100vh';
+    s.style.overflowY  = 'auto';
+    s.style.overflowX  = 'hidden';
+    s.style.willChange = 'transform,opacity';
+    s.style.transition = 'none';
+    s.style.transform  = i===0 ? 'translateY(0)' : 'translateY(100%)';
+    s.style.opacity    = i===0 ? '1' : '0';
+    s.style.zIndex     = i===0 ? '2' : '1';
+  });
+
+  /* ── Section dot nav ── */
+  const dots = document.createElement('div');
+  dots.id = 'fp-dots';
+  dots.style.cssText = `
+    position:fixed;right:20px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:8px;z-index:400;
+  `;
+  secs.forEach((_,i)=>{
+    const d=document.createElement('button');
+    d.style.cssText=`
+      width:6px;height:6px;border-radius:50%;
+      background:rgba(255,255,255,.25);border:none;
+      cursor:pointer;transition:background .3s,transform .3s;padding:0;
+    `;
+    d.title=IDS[i];
+    d.onclick=()=>go(i);
+    dots.appendChild(d);
+  });
+  document.body.appendChild(dots);
+
+  function updateDots(){
+    [...dots.children].forEach((d,i)=>{
+      d.style.background = i===cur ? 'var(--a1)' : 'rgba(255,255,255,.25)';
+      d.style.transform  = i===cur ? 'scale(1.6)' : 'scale(1)';
+    });
+  }
+  updateDots();
+
+  /* ── Hide dots on mobile (sidebar already handles nav) ── */
+  function checkDots(){
+    dots.style.display = window.innerWidth <= 1024 ? 'none' : 'flex';
+  }
+  checkDots();
+  window.addEventListener('resize', checkDots);
+
+  /* ── Core navigation ── */
+  function go(idx, instant=false){
+    if(anim || idx===cur || idx<0 || idx>=secs.length) return;
+    anim = true;
+    const dir = idx > cur ? 1 : -1;
+    const prev = secs[cur];
+    const next = secs[idx];
+
+    /* prep next behind the scene */
+    next.style.transition = 'none';
+    next.style.transform  = `translateY(${dir>0?'100%':'-100%'})`;
+    next.style.opacity    = '0';
+    next.style.zIndex     = '3';
+    next.scrollTop        = 0;
+    prev.style.zIndex     = '2';
+
+    /* trigger after 1 frame */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const ease = instant ? 'none' : 'transform .85s cubic-bezier(.77,0,.175,1), opacity .85s ease';
+      next.style.transition = ease;
+      prev.style.transition = ease;
+      next.style.transform  = 'translateY(0)';
+      next.style.opacity    = '1';
+      prev.style.transform  = `translateY(${dir>0?'-100%':'100%'})`;
+      prev.style.opacity    = '0';
+    }));
+
+    cur = idx;
+    updateDots();
+
+    /* update sidebar + pgbar */
+    document.querySelectorAll('.sa').forEach(a=>
+      a.classList.toggle('active', a.getAttribute('href')==='#'+IDS[cur])
+    );
+    const pct = secs.length > 1 ? (cur/(secs.length-1))*100 : 0;
+    document.getElementById('pgbar').style.width = pct+'%';
+
+    setTimeout(()=>{ anim=false; observeAll(); }, 900);
+  }
+
+  /* ── Expose globally for sidebar nav clicks ── */
+  window.fpGo = (id)=>{ const i=IDS.indexOf(id); if(i>-1) go(i); };
+
+  /* ── Intercept sidebar / topbar nav clicks ── */
+  document.querySelectorAll('.sa, .mob-overlay a[href^="#"]').forEach(a=>{
+    a.addEventListener('click',e=>{
+      e.preventDefault();
+      const id=a.getAttribute('href').replace('#','');
+      window.fpGo(id);
+      cmob && cmob();
+    });
+  });
+
+  /* ── Wheel: allow inner scroll first, then switch ── */
+  secs.forEach(s=>{
+    s.addEventListener('wheel',e=>{
+      const atBottom = s.scrollTop+s.clientHeight >= s.scrollHeight-6;
+      const atTop    = s.scrollTop <= 0;
+      if(e.deltaY>0 && atBottom)      { e.preventDefault(); go(cur+1); }
+      else if(e.deltaY<0 && atTop)    { e.preventDefault(); go(cur-1); }
+    },{passive:false});
+  });
+
+  /* ── Touch ── */
+  page.addEventListener('touchstart',e=>{ touchY=e.touches[0].clientY; },{passive:true});
+  page.addEventListener('touchend',e=>{
+    const diff=touchY-e.changedTouches[0].clientY;
+    const s=secs[cur];
+    const atBottom=s.scrollTop+s.clientHeight>=s.scrollHeight-6;
+    const atTop=s.scrollTop<=0;
+    if(diff>50  && atBottom) go(cur+1);
+    if(diff<-50 && atTop)    go(cur-1);
+  },{passive:true});
+
+  /* ── Keyboard ── */
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowDown'||e.key==='PageDown') go(cur+1);
+    if(e.key==='ArrowUp'  ||e.key==='PageUp')   go(cur-1);
+  });
+
+  /* ── BTT button now resets to section 0 ── */
+  document.getElementById('btt').onclick=()=>go(0);
+
+  /* ── Show btt after first section ── */
+  window.addEventListener('scroll',()=>{},{ passive:true }); /* keep existing listener */
+  setInterval(()=>{
+    document.getElementById('btt').classList.toggle('on', cur>0);
+  },300);
+
+})();
 </script>
 </body>
 </html>
